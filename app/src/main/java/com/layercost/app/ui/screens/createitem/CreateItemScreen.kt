@@ -3,6 +3,7 @@ package com.layercost.app.ui.screens.createitem
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,33 +12,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.Card
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
-import com.layercost.app.domain.calculators.CostBreakdown
+import com.layercost.app.R
 import com.layercost.app.ui.AppViewModelProvider
-import com.layercost.app.domain.model.Filament
+import com.layercost.app.ui.components.CostResultCard
+import com.layercost.app.ui.components.ImagePickerSection
 
 @Composable
 fun CreateItemScreen(
@@ -53,7 +52,7 @@ fun CreateItemScreen(
             .verticalScroll(rememberScrollState())
     ) {
         Text(
-            text = "Crear Pieza de Inventario",
+            text = stringResource(R.string.create_item_title),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -62,175 +61,34 @@ fun CreateItemScreen(
         OutlinedTextField(
             value = state.name,
             onValueChange = { viewModel.updateName(it) },
-            label = { Text("Nombre de la Pieza") },
+            label = { Text(stringResource(R.string.item_name_label)) },
             maxLines = 1,
             modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Image Picker Logic
-        var showImageSourceDialog by remember { mutableStateOf(false) }
-        val context = androidx.compose.ui.platform.LocalContext.current
-        var tempCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
-        
-        // Launcher for taking a picture
-        val cameraLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-            contract = androidx.activity.result.contract.ActivityResultContracts.TakePicture()
-        ) { success ->
-            if (success && tempCameraUri != null) {
-                viewModel.updateImageUri(tempCameraUri)
-            }
-        }
-        
-        // Permission Launcher
-        val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-            contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
-                // Duplicate logic for permission grant
-                val directory = java.io.File(context.filesDir, "images")
-                if (!directory.exists()) {
-                    directory.mkdirs()
-                }
-                val file = java.io.File(directory, "cam_${System.currentTimeMillis()}.jpg")
-                
-                try {
-                    val uri = androidx.core.content.FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        file
-                    )
-                    tempCameraUri = uri
-                    cameraLauncher.launch(uri)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-        
-        // Launcher for picking visual media (gallery)
-        val galleryLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-            contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
-        ) { uri ->
-            uri?.let {
-                // Copy to internal storage
-                try {
-                val inputStream = context.contentResolver.openInputStream(it)
-                val file = java.io.File(context.filesDir, "img_${System.currentTimeMillis()}.jpg")
-                val outputStream = java.io.FileOutputStream(file)
-                inputStream?.copyTo(outputStream)
-                inputStream?.close()
-                outputStream.close()
-                viewModel.updateImageUri(android.net.Uri.fromFile(file))
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
+        // Image Picker
+        ImagePickerSection(
+            imageUri = state.imageUri,
+            onImageSelected = { viewModel.updateImageUri(it) }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clickable { showImageSourceDialog = true }
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant, 
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ),
-            contentAlignment = androidx.compose.ui.Alignment.Center
-        ) {
-            if (state.imageUri != null) {
-                coil.compose.AsyncImage(
-                    model = state.imageUri,
-                    contentDescription = "Imagen de la pieza",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            } else {
-                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = "Agregar Foto",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Text("Agregar Foto", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-        
-        if (showImageSourceDialog) {
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { showImageSourceDialog = false },
-                title = { Text("Seleccionar imagen") },
-                text = { Text("¿Desde dónde quieres agregar la imagen?") },
-                confirmButton = {
-                    androidx.compose.material3.TextButton(
-                        onClick = {
-                            showImageSourceDialog = false
-                            val permission = android.Manifest.permission.CAMERA
-                            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(context, permission)
-                            
-                            if (permissionCheck == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                // Create file in the 'images' subdirectory of filesDir
-                                val directory = java.io.File(context.filesDir, "images")
-                                if (!directory.exists()) {
-                                    directory.mkdirs()
-                                }
-                                val file = java.io.File(directory, "cam_${System.currentTimeMillis()}.jpg")
-                                
-                                try {
-                                    val uri = androidx.core.content.FileProvider.getUriForFile(
-                                        context,
-                                        "${context.packageName}.fileprovider",
-                                        file
-                                    )
-                                    tempCameraUri = uri
-                                    cameraLauncher.launch(uri)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            } else {
-                                permissionLauncher.launch(permission)
-                            }
-                        } 
-                    ) { Text("Cámara") } 
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(
-                        onClick = {
-                            showImageSourceDialog = false
-                            galleryLauncher.launch(
-                                androidx.activity.result.PickVisualMediaRequest(
-                                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
-                                )
-                            )
-                        } 
-                    ) { Text("Galería") }
-                }
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-
         // Dropdowns de Costos (Desgaste y Energía)
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
         ) {
             // Costo Desgaste
-            Box(
-                modifier = Modifier.weight(1f).padding(top = 4.dp)
-            ) {
+            Box(modifier = Modifier.weight(1f).padding(top = 4.dp)) {
                 var wearExpanded by remember { mutableStateOf(false) }
                 OutlinedTextField(
                     value = state.wearCostOption,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Desgaste") },
+                    label = { Text(stringResource(R.string.wear_cost_label)) },
                     trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Expandir") },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -246,12 +104,15 @@ fun CreateItemScreen(
                     listOf("Default").forEach { option ->
                         DropdownMenuItem(
                             text = { 
-                                androidx.compose.foundation.layout.Row(
+                                Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                                 ) {
                                     Text(text = option)
-                                    Text(text = "$3.00", color = MaterialTheme.colorScheme.secondary)
+                                    Text(
+                                        text = "${stringResource(R.string.currency_symbol)}3.00", 
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
                                 }
                             },
                             onClick = {
@@ -264,15 +125,13 @@ fun CreateItemScreen(
             }
             
             // Costo Energetico
-            Box(
-                 modifier = Modifier.weight(1f).padding(top = 4.dp)
-            ) {
+            Box(modifier = Modifier.weight(1f).padding(top = 4.dp)) {
                 var energyExpanded by remember { mutableStateOf(false) }
                 OutlinedTextField(
                     value = state.energyCostOption,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Energía") },
+                    label = { Text(stringResource(R.string.energy_cost_label)) },
                     trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Expandir") },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -288,12 +147,15 @@ fun CreateItemScreen(
                     listOf("Default").forEach { option ->
                         DropdownMenuItem(
                             text = { 
-                                androidx.compose.foundation.layout.Row(
+                                Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                                 ) {
                                     Text(text = option)
-                                    Text(text = "$2.50", color = MaterialTheme.colorScheme.secondary)
+                                    Text(
+                                        text = "${stringResource(R.string.currency_symbol)}2.50", 
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
                                 }
                             },
                             onClick = {
@@ -312,7 +174,7 @@ fun CreateItemScreen(
         OutlinedTextField(
             value = state.gramsInput,
             onValueChange = { viewModel.updateGrams(it) },
-            label = { Text("Gramos de filamento (g)") },
+            label = { Text(stringResource(R.string.grams_label)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
@@ -323,7 +185,7 @@ fun CreateItemScreen(
         OutlinedTextField(
             value = state.timeInput,
             onValueChange = { viewModel.updateTime(it) },
-            label = { Text("Tiempo de Impresión (Horas, ej. 1.5)") },
+            label = { Text(stringResource(R.string.time_label)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth()
         )
@@ -331,18 +193,14 @@ fun CreateItemScreen(
         Spacer(modifier = Modifier.height(16.dp))
         
         // Selector de Tipo de Material (PLA/PETG)
-        Text("Tipo de Material:", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(R.string.material_type_label), style = MaterialTheme.typography.labelMedium)
         var materialExpanded by remember { mutableStateOf(false) }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
             OutlinedTextField(
                 value = state.materialType,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Material") },
+                label = { Text(stringResource(R.string.material_type_label)) },
                 trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Expandir") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -370,7 +228,7 @@ fun CreateItemScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Selector de Filamento
-        Text("Filamento (Marca/Color):", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.filament_selection_label), style = MaterialTheme.typography.labelLarge)
         
         // Filter options based on selected Material Type
         val filteredFilaments = state.availableFilaments.filter { 
@@ -379,21 +237,17 @@ fun CreateItemScreen(
         
         val options = mutableListOf("Custom")
         filteredFilaments.forEach { 
-            options.add("${it.brand} ${it.color} - $${it.price}")
+            options.add("${it.brand} ${it.color} - ${stringResource(R.string.currency_symbol)}${it.price}")
         }
         
         var expanded by remember { mutableStateOf(false) }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
             OutlinedTextField(
                 value = state.selectedFilamentOption,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Selección de Filamento") },
+                label = { Text(stringResource(R.string.filament_selection_label)) },
                 trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Expandir") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -427,10 +281,21 @@ fun CreateItemScreen(
         OutlinedTextField(
             value = state.customFilamentPriceInput,
             onValueChange = { if (isCustom) viewModel.updateCustomFilamentPrice(it) },
-            label = { Text("Costo del Rollo (1kg MXN)") },
+            label = { Text(stringResource(R.string.roll_cost_label)) },
             readOnly = !isCustom,
             enabled = isCustom,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Precio de Venta
+        OutlinedTextField(
+            value = state.salePriceInput,
+            onValueChange = { viewModel.updateSalePrice(it) },
+            label = { Text(stringResource(R.string.sale_price_label)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -445,62 +310,17 @@ fun CreateItemScreen(
             enabled = state.name.isNotBlank(),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Agregar")
+            Text(stringResource(R.string.add_button))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Resultados
         state.costBreakdown?.let { breakdown ->
-            CostResultCard(breakdown)
+             val salePrice = state.salePriceInput.toFloatOrNull() ?: 0f
+             CostResultCard(breakdown, salePrice)
         }
     }
-}
-
-@Composable
-fun CostResultCard(breakdown: CostBreakdown) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Costo Real de Producción:",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            ResultRow("Material:", breakdown.materialCost)
-            ResultRow("Luz:", breakdown.electricityCost)
-            ResultRow("Desgaste:", breakdown.depreciationCost)
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            ResultRow("Margen Seguridad (10%):", breakdown.safetyMargin)
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Total: $${"%.2f".format(breakdown.totalCost)} MXN",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Si cobras menos de esto, estás perdiendo dinero.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-    }
-}
-
-@Composable
-fun ResultRow(label: String, value: Float) {
-    Text(
-        text = "$label $${"%.2f".format(value)}",
-        style = MaterialTheme.typography.bodyMedium
-    )
 }
 
 @Preview(showBackground = true)

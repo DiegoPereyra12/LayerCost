@@ -13,7 +13,7 @@ import com.layercost.app.domain.model.Printer
 
 @Database(
     entities = [InventoryItem::class, Filament::class, Printer::class], 
-    version = 3, 
+    version = 4, 
     exportSchema = false
 )
 abstract class LayerCostDatabase : RoomDatabase() {

@@ -27,7 +27,8 @@ data class CreateItemUiState(
     val customFilamentPriceInput: String = "450",
     val costBreakdown: CostBreakdown? = null,
     val availableFilaments: List<com.layercost.app.domain.model.Filament> = emptyList(),
-    val imageUri: android.net.Uri? = null
+    val imageUri: android.net.Uri? = null,
+    val salePriceInput: String = ""
 )
 
 class CreateItemViewModel(private val repository: WarehouseRepository) : ViewModel() {
@@ -130,15 +131,21 @@ class CreateItemViewModel(private val repository: WarehouseRepository) : ViewMod
         }
     }
 
+    fun updateSalePrice(input: String) {
+        _uiState.update { it.copy(salePriceInput = input) }
+    }
+
     fun saveItem(onSaved: () -> Unit) {
         val state = _uiState.value
         
         if (state.name.isNotBlank()) {
+            val salePrice = state.salePriceInput.toFloatOrNull() ?: 0f
             val newItem = InventoryItem(
                 name = state.name,
                 color = "${state.selectedFilamentOption}", // Store filament info in color field for now as metadata
                 costBreakdown = state.costBreakdown,
-                imageUri = state.imageUri?.toString()
+                imageUri = state.imageUri?.toString(),
+                salePrice = salePrice
             )
             viewModelScope.launch {
                 repository.addItem(newItem)

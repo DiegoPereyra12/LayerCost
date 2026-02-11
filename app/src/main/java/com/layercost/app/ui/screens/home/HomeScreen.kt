@@ -2,7 +2,6 @@ package com.layercost.app.ui.screens.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +46,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +55,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.layercost.app.R
 import com.layercost.app.domain.model.InventoryItem
 import com.layercost.app.ui.AppViewModelProvider
+import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +71,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("LayerCost") },
+                title = { Text(stringResource(R.string.app_name)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -80,7 +80,7 @@ fun HomeScreen(
                     IconButton(onClick = onAddClick) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Nuevo cálculo"
+                            contentDescription = stringResource(R.string.new_calculation_desc)
                         )
                     }
                 }
@@ -114,7 +114,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = "Lista",
+                            contentDescription = stringResource(R.string.list_view_desc),
                             tint = if (!isGridView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -123,7 +123,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.GridView,
-                            contentDescription = "Cuadrícula",
+                            contentDescription = stringResource(R.string.grid_view_desc),
                             tint = if (isGridView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -135,7 +135,7 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Presiona + para iniciar",
+                            text = stringResource(R.string.empty_list_message),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -198,7 +198,7 @@ fun HomeScreen(
                             IconButton(onClick = { itemToDelete = null }) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "Cancelar",
+                                    contentDescription = stringResource(R.string.cancel_button),
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                             }
@@ -211,7 +211,7 @@ fun HomeScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Borrar",
+                                    contentDescription = stringResource(R.string.delete_button),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -249,7 +249,7 @@ fun InventoryItemCard(
         ) {
             // Icon / Image
             if (item.imageUri != null) {
-                coil.compose.AsyncImage(
+                AsyncImage(
                     model = android.net.Uri.parse(item.imageUri),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
@@ -273,24 +273,31 @@ fun InventoryItemCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Color: ${item.color.ifBlank { "N/A" }}",
+                    text = "${stringResource(R.string.color_label)} ${item.color.ifBlank { "N/A" }}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
             
             if (item.costBreakdown != null) {
-                Text(
-                    text = "$${"%.2f".format(item.costBreakdown.totalCost)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${stringResource(R.string.cost_label)} ${stringResource(R.string.currency_symbol)}${"%.2f".format(item.costBreakdown.totalCost)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
             } else {
                 Text(
-                    text = "---",
+                    text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -326,7 +333,7 @@ fun InventoryItemGridCard(
         ) {
             // Icon / Image
             if (item.imageUri != null) {
-                coil.compose.AsyncImage(
+                AsyncImage(
                     model = android.net.Uri.parse(item.imageUri),
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
@@ -355,16 +362,21 @@ fun InventoryItemGridCard(
 
             if (item.costBreakdown != null) {
                 Text(
-                    text = "$${"%.2f".format(item.costBreakdown.totalCost)}",
+                    text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
+                  Text(
+                    text = "${stringResource(R.string.cost_label)} ${stringResource(R.string.currency_symbol)}${"%.2f".format(item.costBreakdown.totalCost)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             } else {
                 Text(
-                    text = "---",
+                    text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }

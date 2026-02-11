@@ -1,3 +1,35 @@
 <resources>
     <string name="app_name">LayerCost</string>
+    <string name="create_item_title">Crear Pieza de Inventario</string>
+    <string name="item_name_label">Nombre de la Pieza</string>
+    <string name="add_photo_label">Agregar Foto</string>
+    <string name="select_image_title">Seleccionar imagen</string>
+    <string name="select_image_message">¿Desde dónde quieres agregar la imagen?</string>
+    <string name="camera_option">Cámara</string>
+    <string name="gallery_option">Galería</string>
+    <string name="wear_cost_label">Desgaste</string>
+    <string name="energy_cost_label">Energía</string>
+    <string name="grams_label">Gramos de filamento (g)</string>
+    <string name="time_label">Tiempo de Impresión (Horas)</string>
+    <string name="material_type_label">Material</string>
+    <string name="filament_selection_label">Selección de Filamento</string>
+    <string name="roll_cost_label">Costo del Rollo (1kg MXN)</string>
+    <string name="sale_price_label">Precio de Venta ($)</string>
+    <string name="add_button">Agregar</string>
+    <string name="production_cost_title">Costo Real de Producción:</string>
+    <string name="material_cost_label">Material:</string>
+    <string name="energy_cost_result_label">Costo Energético:</string>
+    <string name="wear_cost_result_label">Desgaste de Impresora:</string>
+    <string name="total_cost_label">Total (Costo):</string>
+    <string name="estimated_profit_label">Ganancia Estimada:</string>
+    <string name="list_view_desc">Lista</string>
+    <string name="grid_view_desc">Cuadrícula</string>
+    <string name="new_calculation_desc">Nuevo cálculo</string>
+    <string name="empty_list_message">Presiona + para iniciar</string>
+    <string name="cancel_button">Cancelar</string>
+    <string name="delete_button">Borrar</string>
+    <string name="currency_symbol">$</string>
+    <string name="mxn_currency">MXN</string>
+    <string name="color_label">Color:</string>
+    <string name="cost_label">Costo:</string>
 </resources>

@@ -15,5 +15,6 @@ data class InventoryItem(
     @Embedded(prefix = "cost_")
     val costBreakdown: CostBreakdown?,
     val timestamp: Long = System.currentTimeMillis(),
-    val imageUri: String? = null
+    val imageUri: String? = null,
+    val salePrice: Float = 0f
 )
