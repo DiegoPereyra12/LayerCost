@@ -8,16 +8,29 @@ import com.layercost.app.domain.model.Filament
 import com.layercost.app.domain.model.Printer
 import kotlinx.coroutines.flow.Flow
 
+import com.layercost.app.data.local.dao.ItemNoteDao
+import com.layercost.app.domain.model.ItemNote
+
 class WarehouseRepository(
     private val inventoryDao: InventoryDao,
     private val filamentDao: FilamentDao,
-    private val printerDao: PrinterDao
+    private val printerDao: PrinterDao,
+    private val itemNoteDao: ItemNoteDao
 ) {
 
     // Inventory
+    // Inventory
     fun getAllItems(): Flow<List<InventoryItem>> = inventoryDao.getAllItems()
+    fun getItem(id: String): Flow<InventoryItem?> = inventoryDao.getItem(id)
     suspend fun addItem(item: InventoryItem) = inventoryDao.insertItem(item)
+    suspend fun updateItem(item: InventoryItem) = inventoryDao.updateItem(item)
     suspend fun deleteItem(item: InventoryItem) = inventoryDao.deleteItem(item)
+
+    // Notes
+    fun getNotesForItem(itemId: String): Flow<List<ItemNote>> = itemNoteDao.getNotesForItem(itemId)
+    suspend fun addNote(note: ItemNote) = itemNoteDao.insertNote(note)
+    suspend fun updateNote(note: ItemNote) = itemNoteDao.updateNote(note)
+    suspend fun deleteNote(note: ItemNote) = itemNoteDao.deleteNote(note)
 
     // Filaments
     fun getAllFilaments(): Flow<List<Filament>> = filamentDao.getAllFilaments()

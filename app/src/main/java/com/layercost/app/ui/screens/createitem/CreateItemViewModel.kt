@@ -140,9 +140,14 @@ class CreateItemViewModel(private val repository: WarehouseRepository) : ViewMod
         
         if (state.name.isNotBlank()) {
             val salePrice = state.salePriceInput.toFloatOrNull() ?: 0f
+            val weightGrams = state.gramsInput.toFloatOrNull() ?: 0f
             val newItem = InventoryItem(
                 name = state.name,
                 color = "${state.selectedFilamentOption}", // Store filament info in color field for now as metadata
+                weightGrams = weightGrams,
+                stock = 0,
+                brand = "Generic", // TODO: Extract from selection if possible
+                material = state.materialType,
                 costBreakdown = state.costBreakdown,
                 imageUri = state.imageUri?.toString(),
                 salePrice = salePrice

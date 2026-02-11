@@ -16,5 +16,9 @@ data class InventoryItem(
     val costBreakdown: CostBreakdown?,
     val timestamp: Long = System.currentTimeMillis(),
     val imageUri: String? = null,
-    val salePrice: Float = 0f
+    val salePrice: Float = 0f,
+    val stock: Int = 0,
+    val material: String = "PLA",
+    val brand: String = "Generic",
+    val weightGrams: Float = 0f
 )

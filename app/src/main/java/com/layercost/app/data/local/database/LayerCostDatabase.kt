@@ -10,16 +10,19 @@ import com.layercost.app.data.local.dao.PrinterDao
 import com.layercost.app.domain.model.InventoryItem
 import com.layercost.app.domain.model.Filament
 import com.layercost.app.domain.model.Printer
+import com.layercost.app.domain.model.ItemNote
+import com.layercost.app.data.local.dao.ItemNoteDao
 
 @Database(
-    entities = [InventoryItem::class, Filament::class, Printer::class], 
-    version = 4, 
+    entities = [InventoryItem::class, Filament::class, Printer::class, ItemNote::class],
+    version = 7,
     exportSchema = false
 )
 abstract class LayerCostDatabase : RoomDatabase() {
     abstract fun inventoryDao(): InventoryDao
     abstract fun filamentDao(): FilamentDao
     abstract fun printerDao(): PrinterDao
+    abstract fun itemNoteDao(): ItemNoteDao
 
     companion object {
         @Volatile

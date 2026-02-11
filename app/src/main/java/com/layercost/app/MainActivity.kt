@@ -30,6 +30,7 @@ import com.layercost.app.ui.screens.createitem.CreateItemScreen
 import com.layercost.app.ui.screens.filaments.AddFilamentScreen
 import com.layercost.app.ui.screens.filaments.FilamentsScreen
 import com.layercost.app.ui.screens.home.HomeScreen
+import com.layercost.app.ui.screens.itemdetail.ItemDetailScreen
 import com.layercost.app.ui.screens.printers.AddPrinterScreen
 import com.layercost.app.ui.screens.printers.PrintersScreen
 import com.layercost.app.ui.theme.LayerCostTheme
@@ -55,8 +56,7 @@ fun MainScreen() {
 
     Scaffold(
         bottomBar = {
-            // Only show bottom bar for main tabs
-            if (currentRoute in listOf("home", "filaments", "printers")) {
+            if (currentRoute == "home" || currentRoute == "filaments" || currentRoute == "printers") {
                 NavigationBar {
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
@@ -105,36 +105,49 @@ fun MainScreen() {
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
-                composable("home") {
-                    HomeScreen(
-                        onAddClick = { navController.navigate("create_item") }
-                    )
-                }
-                composable("filaments") {
-                    FilamentsScreen(
-                        onAddClick = { navController.navigate("add_filament") }
-                    )
-                }
-                composable("add_filament") {
-                    AddFilamentScreen(
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-                composable("printers") {
-                    PrintersScreen(
-                        onAddClick = { navController.navigate("add_printer") }
-                    )
-                }
-                composable("add_printer") {
-                    AddPrinterScreen(
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-                composable("create_item") {
-                    CreateItemScreen(
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
+            composable("home") {
+                HomeScreen(
+                    onAddClick = { navController.navigate("create_item") },
+                    onItemClick = { item -> 
+                        navController.navigate("item_detail/${item.id}")
+                    }
+                )
             }
+            composable("filaments") {
+                FilamentsScreen(
+                    onAddClick = { navController.navigate("add_filament") }
+                )
+            }
+            composable("add_filament") {
+                AddFilamentScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("printers") {
+                PrintersScreen(
+                    onAddClick = { navController.navigate("add_printer") }
+                )
+            }
+            composable("add_printer") {
+                AddPrinterScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("create_item") {
+                CreateItemScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = "item_detail/{itemId}",
+                arguments = listOf(androidx.navigation.navArgument("itemId") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val itemId = backStackEntry.arguments?.getString("itemId") ?: return@composable
+                ItemDetailScreen(
+                    itemId = itemId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+        }
     }
 }

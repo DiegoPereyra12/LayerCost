@@ -16,6 +16,12 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: InventoryItem)
 
+    @androidx.room.Update
+    suspend fun updateItem(item: InventoryItem)
+
     @Delete
     suspend fun deleteItem(item: InventoryItem)
+
+    @Query("SELECT * FROM inventory_items WHERE id = :id")
+    fun getItem(id: String): Flow<InventoryItem?>
 }

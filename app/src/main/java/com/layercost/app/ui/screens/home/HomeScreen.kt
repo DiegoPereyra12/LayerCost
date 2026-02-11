@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,29 +63,51 @@ import androidx.compose.ui.res.stringResource
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    onAddClick: () -> Unit = {}
+    onAddClick: () -> Unit = {},
+    onItemClick: (InventoryItem) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
-    var isGridView by remember { mutableStateOf(false) }
+    val isGridView = false // Forced list view as per new design
     var itemToDelete by remember { mutableStateOf<InventoryItem?>(null) }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = { 
+                    Text(
+                        stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 actions = {
-                    IconButton(onClick = onAddClick) {
+                    IconButton(onClick = { /* TODO: Profile/Settings */ }) {
                         Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = stringResource(R.string.new_calculation_desc)
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Perfil",
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            androidx.compose.material3.FloatingActionButton(
+                onClick = onAddClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.new_calculation_desc)
+                )
+            }
         }
     ) { innerPadding ->
         Box(
@@ -102,32 +125,10 @@ fun HomeScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // View Toggle Buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(
-                        onClick = { isGridView = false }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = stringResource(R.string.list_view_desc),
-                            tint = if (!isGridView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(
-                        onClick = { isGridView = true }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.GridView,
-                            contentDescription = stringResource(R.string.grid_view_desc),
-                            tint = if (isGridView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                DashboardCard(
+                    totalInventoryValue = state.totalInventoryValue,
+                    totalEstimatedProfit = state.totalEstimatedProfit
+                )
 
                 if (state.items.isEmpty()) {
                     Box(
@@ -141,37 +142,20 @@ fun HomeScreen(
                         )
                     }
                 } else {
-                    if (isGridView) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            contentPadding = PaddingValues(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f) // Take remaining space
-                        ) {
-                            items(state.items) { item ->
-                                InventoryItemGridCard(
-                                    item = item,
-                                    isSelected = itemToDelete?.id == item.id,
-                                    onLongClick = { itemToDelete = item },
-                                    onClick = { itemToDelete = null }
-                                )
-                            }
-                        }
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            items(state.items) { item ->
-                                InventoryItemCard(
-                                    item = item,
-                                    isSelected = itemToDelete?.id == item.id,
-                                    onLongClick = { itemToDelete = item },
-                                    onClick = { itemToDelete = null }
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
+                    LazyColumn(
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp, start = 16.dp, end = 16.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(state.items) { item ->
+                            InventoryItemCard(
+                                item = item,
+                                isSelected = itemToDelete?.id == item.id,
+                                onLongClick = { itemToDelete = item },
+                                onClick = {
+                                    if (itemToDelete == null) onItemClick(item) else itemToDelete = null
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp)) // More spacing for new cards
                         }
                     }
                 }
@@ -223,81 +207,51 @@ fun HomeScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun InventoryItemCard(
-    item: InventoryItem,
-    isSelected: Boolean = false,
-    onLongClick: () -> Unit = {},
-    onClick: () -> Unit = {}
+fun DashboardCard(
+    totalInventoryValue: Float,
+    totalEstimatedProfit: Float
 ) {
     Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ),
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(vertical = 16.dp, horizontal = 24.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon / Image
-            if (item.imageUri != null) {
-                AsyncImage(
-                    model = android.net.Uri.parse(item.imageUri),
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            } else {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_3d_piece),
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Valor Total Inventario:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${stringResource(R.string.currency_symbol)}${"%,.0f".format(totalInventoryValue)}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = "${stringResource(R.string.color_label)} ${item.color.ifBlank { "N/A" }}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
             }
             
-            if (item.costBreakdown != null) {
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "${stringResource(R.string.cost_label)} ${stringResource(R.string.currency_symbol)}${"%.2f".format(item.costBreakdown.totalCost)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "Ganancia Estimada:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${stringResource(R.string.currency_symbol)}${"%,.0f".format(totalEstimatedProfit)}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -307,78 +261,142 @@ fun InventoryItemCard(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun InventoryItemGridCard(
+fun InventoryItemCard(
     item: InventoryItem,
     isSelected: Boolean = false,
     onLongClick: () -> Unit = {},
     onClick: () -> Unit = {}
 ) {
+    // Determine card background color based on selection
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+    } else {
+        // Dark card background similar to screenshot
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    }
+
     Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+            containerColor = containerColor
         ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp), // More rounded
         modifier = Modifier
             .fillMaxWidth()
+            .height(140.dp) // Fixed height for consistent look
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
     ) {
-        Column(
+        Row(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon / Image
-            if (item.imageUri != null) {
-                AsyncImage(
-                    model = android.net.Uri.parse(item.imageUri),
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            } else {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_3d_piece),
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-                )
+            // Left: Image on dark square background
+            Card(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f)),
+                modifier = Modifier.size(116.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (item.imageUri != null) {
+                        AsyncImage(
+                            model = android.net.Uri.parse(item.imageUri),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_3d_piece),
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
             
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            // Middle: Info
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Top // Push content to top
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${item.weightGrams} g",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    
+                    // Right: Price
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
+                            style = MaterialTheme.typography.headlineSmall, // Bigger price
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (item.costBreakdown != null) {
+                           Text(
+                                text = "Costo: ${stringResource(R.string.currency_symbol)}${"%.2f".format(item.costBreakdown.totalCost)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ) 
+                        }
+                    }
+                }
 
-            if (item.costBreakdown != null) {
-                Text(
-                    text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-                  Text(
-                    text = "${stringResource(R.string.cost_label)} ${stringResource(R.string.currency_symbol)}${"%.2f".format(item.costBreakdown.totalCost)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            } else {
-                Text(
-                    text = "${stringResource(R.string.currency_symbol)}${"%.2f".format(item.salePrice)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Stock Badge or Progress Bar area
+                 if (item.stock == 0) {
+                     Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text(
+                            text = "SIN STOCK",
+                            color = MaterialTheme.colorScheme.onError, // Usually white on error
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.weight(1f))
+                
+                // Stock Count
+                if (item.stock > 0) {
+                    Text(
+                        text = "Stock: ${item.stock}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
             }
         }
     }

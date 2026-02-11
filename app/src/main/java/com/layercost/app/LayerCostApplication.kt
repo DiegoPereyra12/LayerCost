@@ -23,7 +23,8 @@ class AppDefaultContainer(private val context: android.content.Context) : AppCon
         WarehouseRepository(
             inventoryDao = database.inventoryDao(),
             filamentDao = database.filamentDao(),
-            printerDao = database.printerDao()
+            printerDao = database.printerDao(),
+            itemNoteDao = database.itemNoteDao()
         )
     }
 }

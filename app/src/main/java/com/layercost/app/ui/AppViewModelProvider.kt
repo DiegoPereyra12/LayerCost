@@ -10,6 +10,8 @@ import com.layercost.app.ui.screens.home.HomeViewModel
 import com.layercost.app.ui.screens.filaments.FilamentsViewModel
 import com.layercost.app.ui.screens.filaments.AddFilamentViewModel
 import com.layercost.app.ui.screens.printers.PrintersViewModel
+import com.layercost.app.ui.screens.itemdetail.ItemDetailViewModel
+import androidx.lifecycle.createSavedStateHandle
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {
@@ -27,6 +29,14 @@ object AppViewModelProvider {
         }
         initializer {
             PrintersViewModel(layerCostApplication().container.warehouseRepository)
+        }
+        initializer {
+            val savedStateHandle = createSavedStateHandle()
+            val itemId = checkNotNull(savedStateHandle["itemId"]) as String
+            ItemDetailViewModel(
+                layerCostApplication().container.warehouseRepository,
+                itemId = itemId
+            )
         }
     }
 }
