@@ -94,7 +94,8 @@ fun HomeScreen(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
-                }
+                },
+                windowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp)
             )
         },
         floatingActionButton = {
