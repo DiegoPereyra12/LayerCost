@@ -18,14 +18,16 @@ import kotlinx.coroutines.launch
 
 data class CreateItemUiState(
     val name: String = "",
-    val color: String = "",
+    val energyCostOption: String = "Default",
+    val wearCostOption: String = "Default",
     val gramsInput: String = "",
     val timeInput: String = "",
     val selectedFilamentOption: String = "Custom",
     val materialType: String = "PLA",
     val customFilamentPriceInput: String = "450",
     val costBreakdown: CostBreakdown? = null,
-    val availableFilaments: List<com.layercost.app.domain.model.Filament> = emptyList()
+    val availableFilaments: List<com.layercost.app.domain.model.Filament> = emptyList(),
+    val imageUri: android.net.Uri? = null
 )
 
 class CreateItemViewModel(private val repository: WarehouseRepository) : ViewModel() {
@@ -45,8 +47,12 @@ class CreateItemViewModel(private val repository: WarehouseRepository) : ViewMod
         _uiState.update { it.copy(name = input) }
     }
 
-    fun updateColor(input: String) {
-        _uiState.update { it.copy(color = input) }
+    fun updateEnergyCostOption(input: String) {
+        _uiState.update { it.copy(energyCostOption = input) }
+    }
+
+    fun updateWearCostOption(input: String) {
+        _uiState.update { it.copy(wearCostOption = input) }
     }
 
     fun updateGrams(input: String) {
@@ -98,6 +104,10 @@ class CreateItemViewModel(private val repository: WarehouseRepository) : ViewMod
         calculate()
     }
 
+    fun updateImageUri(uri: android.net.Uri?) {
+        _uiState.update { it.copy(imageUri = uri) }
+    }
+
     private fun calculate() {
         val state = _uiState.value
         val grams = state.gramsInput.toFloatOrNull()
@@ -126,8 +136,9 @@ class CreateItemViewModel(private val repository: WarehouseRepository) : ViewMod
         if (state.name.isNotBlank()) {
             val newItem = InventoryItem(
                 name = state.name,
-                color = state.color,
-                costBreakdown = state.costBreakdown
+                color = "${state.selectedFilamentOption}", // Store filament info in color field for now as metadata
+                costBreakdown = state.costBreakdown,
+                imageUri = state.imageUri?.toString()
             )
             viewModelScope.launch {
                 repository.addItem(newItem)

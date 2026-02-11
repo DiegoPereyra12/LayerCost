@@ -248,12 +248,21 @@ fun InventoryItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon / Image
-            Image(
-                painter = painterResource(id = R.drawable.ic_3d_piece),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-            )
+            if (item.imageUri != null) {
+                coil.compose.AsyncImage(
+                    model = android.net.Uri.parse(item.imageUri),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_3d_piece),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                )
+            }
             
             Spacer(modifier = Modifier.width(16.dp))
             
@@ -316,12 +325,21 @@ fun InventoryItemGridCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Icon / Image
-            Image(
-                painter = painterResource(id = R.drawable.ic_3d_piece),
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-            )
+            if (item.imageUri != null) {
+                coil.compose.AsyncImage(
+                    model = android.net.Uri.parse(item.imageUri),
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_3d_piece),
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Card
@@ -64,16 +67,244 @@ fun CreateItemScreen(
             modifier = Modifier.fillMaxWidth()
         )
         
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Image Picker Logic
+        var showImageSourceDialog by remember { mutableStateOf(false) }
+        val context = androidx.compose.ui.platform.LocalContext.current
+        var tempCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+        
+        // Launcher for taking a picture
+        val cameraLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.TakePicture()
+        ) { success ->
+            if (success && tempCameraUri != null) {
+                viewModel.updateImageUri(tempCameraUri)
+            }
+        }
+        
+        // Permission Launcher
+        val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                // Duplicate logic for permission grant
+                val directory = java.io.File(context.filesDir, "images")
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+                val file = java.io.File(directory, "cam_${System.currentTimeMillis()}.jpg")
+                
+                try {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        file
+                    )
+                    tempCameraUri = uri
+                    cameraLauncher.launch(uri)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+        
+        // Launcher for picking visual media (gallery)
+        val galleryLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
+        ) { uri ->
+            uri?.let {
+                // Copy to internal storage
+                try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val file = java.io.File(context.filesDir, "img_${System.currentTimeMillis()}.jpg")
+                val outputStream = java.io.FileOutputStream(file)
+                inputStream?.copyTo(outputStream)
+                inputStream?.close()
+                outputStream.close()
+                viewModel.updateImageUri(android.net.Uri.fromFile(file))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clickable { showImageSourceDialog = true }
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant, 
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            if (state.imageUri != null) {
+                coil.compose.AsyncImage(
+                    model = state.imageUri,
+                    contentDescription = "Imagen de la pieza",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.AddAPhoto,
+                        contentDescription = "Agregar Foto",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text("Agregar Foto", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        
+        if (showImageSourceDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showImageSourceDialog = false },
+                title = { Text("Seleccionar imagen") },
+                text = { Text("¿Desde dónde quieres agregar la imagen?") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            showImageSourceDialog = false
+                            val permission = android.Manifest.permission.CAMERA
+                            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(context, permission)
+                            
+                            if (permissionCheck == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                // Create file in the 'images' subdirectory of filesDir
+                                val directory = java.io.File(context.filesDir, "images")
+                                if (!directory.exists()) {
+                                    directory.mkdirs()
+                                }
+                                val file = java.io.File(directory, "cam_${System.currentTimeMillis()}.jpg")
+                                
+                                try {
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        file
+                                    )
+                                    tempCameraUri = uri
+                                    cameraLauncher.launch(uri)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            } else {
+                                permissionLauncher.launch(permission)
+                            }
+                        } 
+                    ) { Text("Cámara") } 
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            showImageSourceDialog = false
+                            galleryLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(
+                                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        } 
+                    ) { Text("Galería") }
+                }
+            )
+        }
+        
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Color
-        OutlinedTextField(
-            value = state.color,
-            onValueChange = { viewModel.updateColor(it) },
-            label = { Text("Color") },
-            maxLines = 1,
-            modifier = Modifier.fillMaxWidth()
-        )
+        // Dropdowns de Costos (Desgaste y Energía)
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
+            // Costo Desgaste
+            Box(
+                modifier = Modifier.weight(1f).padding(top = 4.dp)
+            ) {
+                var wearExpanded by remember { mutableStateOf(false) }
+                OutlinedTextField(
+                    value = state.wearCostOption,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Desgaste") },
+                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Expandir") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { wearExpanded = true }
+                )
+                DropdownMenu(
+                    expanded = wearExpanded,
+                    onDismissRequest = { wearExpanded = false }
+                ) {
+                    listOf("Default").forEach { option ->
+                        DropdownMenuItem(
+                            text = { 
+                                androidx.compose.foundation.layout.Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = option)
+                                    Text(text = "$3.00", color = MaterialTheme.colorScheme.secondary)
+                                }
+                            },
+                            onClick = {
+                                viewModel.updateWearCostOption(option)
+                                wearExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+            
+            // Costo Energetico
+            Box(
+                 modifier = Modifier.weight(1f).padding(top = 4.dp)
+            ) {
+                var energyExpanded by remember { mutableStateOf(false) }
+                OutlinedTextField(
+                    value = state.energyCostOption,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Energía") },
+                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Expandir") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { energyExpanded = true }
+                )
+                DropdownMenu(
+                    expanded = energyExpanded,
+                    onDismissRequest = { energyExpanded = false }
+                ) {
+                    listOf("Default").forEach { option ->
+                        DropdownMenuItem(
+                            text = { 
+                                androidx.compose.foundation.layout.Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = option)
+                                    Text(text = "$2.50", color = MaterialTheme.colorScheme.secondary)
+                                }
+                            },
+                            onClick = {
+                                viewModel.updateEnergyCostOption(option)
+                                energyExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
